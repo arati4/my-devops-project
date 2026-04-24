@@ -1,29 +1,40 @@
 pipeline {
     agent any
 
+    environment {
+        AWS_REGION = "ap-south-1"
+        ECR_REPO = "885820157422.dkr.ecr.ap-south-1.amazonaws.com/my-devops-app"
+    }
+
     stages {
 
         stage('Pull Code') {
             steps {
-                echo "Code pulled successfully"
+                echo "Code pulled"
             }
         }
 
-        stage('Build') {
+        stage('Build Docker Image') {
             steps {
-                sh 'echo Building project...'
+                sh 'docker build -t my-app .'
             }
         }
 
-        stage('Test') {
+        stage('Login to ECR') {
             steps {
-                sh 'echo Running tests...'
+                sh '''
+                aws ecr get-login-password --region $AWS_REGION \
+                | docker login --username AWS --password-stdin $ECR_REPO
+                '''
             }
         }
 
-        stage('Deploy') {
+        stage('Push Image') {
             steps {
-                sh 'echo Deploying app...'
+                sh '''
+                docker tag my-app:latest $ECR_REPO:latest
+                docker push $ECR_REPO:latest
+                '''
             }
         }
     }
